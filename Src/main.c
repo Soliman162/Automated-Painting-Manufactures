@@ -421,10 +421,10 @@ void vtaskUartControl(void *pvParameters)
         vTimerSetTimerID( Filling_Timer_Handle , (void *)RESET );
         vTimerSetTimerID( Capping_Timer_Handle , (void *)RESET );
       } 
-      // sprintf(Message_buffer,"Filled Bottels number = %d",Filling_u32counter);
-      // HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
-      // sprintf(Message_buffer,"Capping Bottels number = %d",Capping_u32counter);
-      // HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
+      sprintf(Message_buffer,"Filled Bottels number = %d",Filling_u32counter);
+      HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
+      sprintf(Message_buffer,"Capping Bottels number = %d",Capping_u32counter);
+      HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
     }
   }
 }
