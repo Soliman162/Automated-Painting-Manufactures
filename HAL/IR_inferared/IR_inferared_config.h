@@ -1,0 +1,7 @@
+#ifndef IR_INFERARED_CONFIG_H
+#define IR_INFERARED_CONFIG_H
+
+
+
+
+#endif
