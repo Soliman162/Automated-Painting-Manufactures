@@ -388,6 +388,7 @@ void vtaskRotateLine2(void *pvParameters)
 
 void vtaskUartControl(void *pvParameters)
 {
+  uint8_t *tempRecive;
   uint8_t Message_buffer[50] ;
   uint8_t RequiredBottelsNumber = 0;
 	vTaskSetApplicationTaskTag(NULL,(void *)UartControlTaskTracePin.Pin);
@@ -399,8 +400,8 @@ void vtaskUartControl(void *pvParameters)
         (RequiredBottelsNumber == 0) 
       )
     {
-      //tempRecive = UART_ptrReceive_String();
-      RequiredBottelsNumber = 3; //UART_u8Receive() - '0';//atoi((char *)tempRecive);
+      HAL_UART_Receive(&huart1, tempRecive, 1, HAL_MAX_DELAY);
+      RequiredBottelsNumber = *tempRecive - '0';
       /*start line1 stepper*/
       xEventGroupClearBits(RotaryControlEvent_GRP,LINE1_STEEPER);
 
