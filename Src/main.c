@@ -500,14 +500,8 @@ int main(void)
 
 void vApplicationTickHook(void)
 {
-	//GPIO_enumSETPinValue(&Tick_pin,GPIO_HIGH);	
-	//GPIO_enumSETPinValue(&Tick_pin,GPIO_LOW);	
-}
-
-void vApplicationIdleHook( void )
-{
-	//vTaskResume(Feeding_Task_Handle);
-	//xSemaphoreGive(Line1_stepper_semaphore);
+  HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_RESET);
 }
 
 void Init_RTOS(void)
