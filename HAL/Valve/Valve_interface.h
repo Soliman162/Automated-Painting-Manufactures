@@ -3,7 +3,7 @@
 
 typedef struct 
 {
-    GPIO_TypeDef GPIO_PORT ;
+    GPIO_TypeDef *GPIO_PORT ;
     GPIO_InitTypeDef Valve_pin ;
     
 }VALVE_Config_t;

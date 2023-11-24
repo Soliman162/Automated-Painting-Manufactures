@@ -66,11 +66,6 @@
 #define configTIMER_QUEUE_LENGTH                10
 #define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE 
 
-//#define configAPPLICATION_ALLOCATED_HEAP        0
-
-//#define configUSE_16_BIT_TICKS      1
-//#define configTICK_TYPE_WIDTH_IN_BITS   TICK_TYPE_WIDTH_32_BITS
-
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 		0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
@@ -100,7 +95,10 @@ configKERNEL_INTERRUPT_PRIORITY setting.  Here 15 corresponds to the lowest
 NVIC value of 255. */
 #define configLIBRARY_KERNEL_INTERRUPT_PRIORITY	15
 
+/*User Defines*/
+#define configKEIL_TIMELINE_ANALYSIS	0
 
+#if configKEIL_TIMELINE_ANALYSIS == 1
 #define traceTASK_SWITCHED_IN()	 																																									\
 									do																																									\
 									{																																										\
@@ -131,6 +129,7 @@ NVIC value of 255. */
 									}																																										\
 									while(0)	
 
+#endif
 
 #endif /* FREERTOS_CONFIG_H */
 

@@ -4,7 +4,7 @@
 
 typedef struct
 {
-    GPIO_TypeDef GPIO_PORT ;
+    GPIO_TypeDef *GPIO_PORT ;
     GPIO_InitTypeDef Motor_Data[2];
 
 }DC_Motor_Config_t;

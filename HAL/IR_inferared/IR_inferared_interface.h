@@ -10,7 +10,7 @@ typedef enum
 
 typedef struct
 {
-    GPIO_TypeDef    GPIO_PORT ;
+    GPIO_TypeDef *   GPIO_PORT ;
     GPIO_InitTypeDef IR_pin_config ; 
 
 }IR_Config_t;

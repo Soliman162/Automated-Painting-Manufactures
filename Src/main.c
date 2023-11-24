@@ -61,6 +61,7 @@
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                       HW Configrations                                  						 */
+// 14 15
 #define IR_PORT               GPIOA
 #define PUMP_PORT             GPIOA
 #define CAPPING_MOTOR_PORT    GPIOA
@@ -74,10 +75,10 @@
 #define YELLOW_PUMP_PIN       GPIO_PIN_6
 #define Filling_Pump_PIN      GPIO_PIN_7
 
-#define CAPPING_IR_PIN        GPIO_PIN_9
-#define FILLING_IR_PIN        GPIO_PIN_10
-#define FEEDING_IR_PIN        GPIO_PIN_11
 #define CAPPING_VALVE_PIN     GPIO_PIN_8
+#define FEEDING_IR_PIN        GPIO_PIN_11
+#define CAPPING_IR_PIN        GPIO_PIN_12
+#define FILLING_IR_PIN        GPIO_PIN_13
 
 #define STEPPER_PORT          GPIOB
 
@@ -150,6 +151,7 @@ STEPPER_Config_t Rotary_Stepper ;
 /*******************************************************************************************************/
 /*                                       Trace pins	                                           		     */
 // tick -->0   task portA--> 1 14 15 13 12  tasks portC--> 13 14 15
+#if configKEIL_TIMELINE_ANALYSIS == 1
 GPIO_InitTypeDef Tick_pin = (GPIO_InitTypeDef){GPIO_PIN_0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
 
 GPIO_InitTypeDef FeddingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_13,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
@@ -161,6 +163,7 @@ GPIO_InitTypeDef line2TaskTracePin  =(GPIO_InitTypeDef){GPIO_PIN_14,GPIO_MODE_OU
 GPIO_InitTypeDef RotaryTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_15,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
 
 GPIO_InitTypeDef UartControlTaskTracePin = (GPIO_InitTypeDef){GPIO_PIN_1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+#endif
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                     TasksHandlers                                                   */
@@ -200,7 +203,9 @@ void SystemClock_Config(void);
 void Init_RTOS(void);
 
 /* test */
+#if configKEIL_TIMELINE_ANALYSIS == 1
 static inline void InitTracePins(void);
+#endif
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                  CallBack Functions                                                 */
@@ -246,7 +251,9 @@ void vCappingTimerCallback( TimerHandle_t xTimer )
 void vtaskFeedingCotrol(void *pvParameters)
 {
   EXISTANCE Check_Flag = OBJECT_ABSENT;
-	vTaskSetApplicationTaskTag( NULL, ( void * ) (FeddingTaskTracePin.Pin+GPIO_PIN_13) );
+  #if configKEIL_TIMELINE_ANALYSIS == 1
+	  vTaskSetApplicationTaskTag( NULL, ( void * ) (FeddingTaskTracePin.Pin+GPIO_PIN_13) );
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -267,7 +274,9 @@ void vtaskFeedingCotrol(void *pvParameters)
 void vtaskFillingCotrol(void *pvParameters)
 {
   EXISTANCE Check_Flag = OBJECT_ABSENT;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)(FillingTaskTracePin.Pin+GPIO_PIN_13));
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -295,7 +304,9 @@ void vtaskFillingCotrol(void *pvParameters)
 void vtaskCappingCotrol(void *pvParameters)
 {
   EXISTANCE Check_flag = OBJECT_ABSENT;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)(CappingTaskTracePin.Pin+GPIO_PIN_13) );
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -325,7 +336,9 @@ void vtaskRotateRotary(void *pvParameters)
   uint8_t Step_Counter = 0;
   uint8_t end = Rotary_Stepper.movingSequence == HALF_STEP ?8:4;
   TickType_t perodicty = Rotary_Stepper.speed*10;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)RotaryTaskTracePin.Pin);
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -354,7 +367,9 @@ void vtaskRotateLine1(void *pvParameters)
   uint8_t step = 0;
   uint8_t end = Line1_Stepper.movingSequence == HALF_STEP ?8:4;
   TickType_t perodicty = Line1_Stepper.speed*10;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)line1TaskTracePin.Pin);
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -376,7 +391,9 @@ void vtaskRotateLine2(void *pvParameters)
   uint8_t step = 0;
   uint8_t end = Line2_Stepper.movingSequence == HALF_STEP ?8:4;
   TickType_t perodicty = Line2_Stepper.speed*10;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)line2TaskTracePin.Pin);
+  #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -388,10 +405,12 @@ void vtaskRotateLine2(void *pvParameters)
 
 void vtaskUartControl(void *pvParameters)
 {
-  uint8_t *tempRecive;
-  uint8_t Message_buffer[50] ;
+  uint8_t *tempRecive = '\0';
+  char Message_buffer[50];
   uint8_t RequiredBottelsNumber = 0;
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)UartControlTaskTracePin.Pin);
+  #endif 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
@@ -422,9 +441,11 @@ void vtaskUartControl(void *pvParameters)
         vTimerSetTimerID( Filling_Timer_Handle , (void *)RESET );
         vTimerSetTimerID( Capping_Timer_Handle , (void *)RESET );
       } 
-      sprintf(Message_buffer,"Filled Bottels number = %d",Filling_u32counter);
+      memset(Message_buffer,'\0',50);
+      sprintf(Message_buffer,"Filled Bottels number = %ld",Filling_u32counter);
       HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
-      sprintf(Message_buffer,"Capping Bottels number = %d",Capping_u32counter);
+      memset(Message_buffer,'\0',50);
+      sprintf(Message_buffer,"Capping Bottels number = %ld",Capping_u32counter);
       HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
     }
   }
@@ -500,8 +521,10 @@ int main(void)
 
 void vApplicationTickHook(void)
 {
+  #if configKEIL_TIMELINE_ANALYSIS == 1
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_RESET);
+  #endif
 }
 
 void Init_RTOS(void)
@@ -518,7 +541,7 @@ void Init_RTOS(void)
   /* start feeding */
 	xSemaphoreGive(Line1_stepper_semaphore);
 }
-
+#if configKEIL_TIMELINE_ANALYSIS == 1
 static inline void InitTracePins(void)
 {
   HAL_GPIO_Init(GPIOA,&Tick_pin);
@@ -539,52 +562,53 @@ static inline void InitTracePins(void)
   HAL_GPIO_WritePin(GPIOA,RotaryTaskTracePin.Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOA,UartControlTaskTracePin.Pin,GPIO_PIN_RESET);	
 }
+#endif
 // 0x080032b4
 void Setup_HardWare(void)
 {
   Capping_motor = (DC_Motor_Config_t){   
                                       CAPPING_MOTOR_PORT,
-                                      (GPIO_InitTypeDef[]){
-                                      {CAPPING_MOTOR_CW_PIN, GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {CAPPING_MOTOR_CCW_PIN, GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}  
-                                      }
+                                      {
+                                      (GPIO_InitTypeDef){CAPPING_MOTOR_CW_PIN, GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){CAPPING_MOTOR_CCW_PIN, GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH} 
+                                      } 
                                      };
-  Filling_Pump = (PUMP_Config_t){PUMP_PORT,{Filling_Pump_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
-  Capping_Valve = (VALVE_Config_t){CAPPING_VALVE_PORT,{CAPPING_VALVE_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
-  Filling_IR = (IR_Config_t){IR_PORT,{FILLING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
-  Capping_IR = (IR_Config_t){IR_PORT,{CAPPING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
-  Feeding_IR = (IR_Config_t){IR_PORT,{FEEDING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  Filling_Pump = (PUMP_Config_t){PUMP_PORT,(GPIO_InitTypeDef){Filling_Pump_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
+  Capping_Valve = (VALVE_Config_t){CAPPING_VALVE_PORT,(GPIO_InitTypeDef){CAPPING_VALVE_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
+  Filling_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){FILLING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  Capping_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){CAPPING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  Feeding_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){FEEDING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
   Line1_Stepper = (STEPPER_Config_t){
                                       (SPEED)SPEED_5,
                                       (MVType)WAVE_DRIVE,
                                       STEPPER_PORT,
-                                    (GPIO_InitTypeDef[]){
-                                      {LINE1_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE1_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE1_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE1_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
+                                    {
+                                      (GPIO_InitTypeDef){LINE1_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE1_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE1_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE1_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                     }                                   
                                     } ;
   Line2_Stepper = (STEPPER_Config_t){
                                       (SPEED)SPEED_5,
                                       (MVType)WAVE_DRIVE,
                                       STEPPER_PORT,
-                                    (GPIO_InitTypeDef[]){
-                                      {LINE2_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE2_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE2_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                      {LINE2_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
+                                     {
+                                      (GPIO_InitTypeDef){LINE2_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE2_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE2_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                      (GPIO_InitTypeDef){LINE2_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                     }
                                     } ;
   Rotary_Stepper =  (STEPPER_Config_t){
                                         (SPEED)MAX_SPEED,
                                         (MVType)WAVE_DRIVE,
                                         STEPPER_PORT,
-                                      (GPIO_InitTypeDef[]){
-                                        {ROTARY_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                        {ROTARY_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                        {ROTARY_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
-                                        {ROTARY_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
+                                      {
+                                        (GPIO_InitTypeDef){ROTARY_STEPPER_PIN0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                        (GPIO_InitTypeDef){ROTARY_STEPPER_PIN1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                        (GPIO_InitTypeDef){ROTARY_STEPPER_PIN2,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH},
+                                        (GPIO_InitTypeDef){ROTARY_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                       }
                                       } ;							
   DCMotor_voidInit(&Capping_motor);
@@ -595,7 +619,9 @@ void Setup_HardWare(void)
   Stepper_voidInit(&Line1_Stepper);
   Stepper_voidInit(&Line2_Stepper);
   Stepper_voidInit(&Rotary_Stepper);
+  #if configKEIL_TIMELINE_ANALYSIS == 1
 	InitTracePins();
+  #endif
 }
 
 

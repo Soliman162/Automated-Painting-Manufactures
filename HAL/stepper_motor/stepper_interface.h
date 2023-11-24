@@ -27,7 +27,7 @@ typedef struct
 
     SPEED speed;
     MVType  movingSequence;
-    GPIO_TypeDef GPIO_PORT;
+    GPIO_TypeDef *GPIO_PORT;
     GPIO_InitTypeDef Coils[4];
 
 }STEPPER_Config_t;
