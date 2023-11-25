@@ -23,17 +23,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+/*******************************************************************************************************/
+/*                                         FreeRtos                                                    */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 #include "timers.h"
 #include "event_groups.h"
-
+/*******************************************************************************************************/
+/*                                               HW                                                    */
 #include "main.h"
 #include "usart.h"
 #include "gpio.h"
-
+/*******************************************************************************************************/
 #include "stepper_interface.h"
 #include "DC_interface.h"
 #include "IR_inferared_interface.h"
@@ -408,6 +410,7 @@ void vtaskUartControl(void *pvParameters)
   uint8_t *tempRecive = '\0';
   char Message_buffer[50];
   uint8_t RequiredBottelsNumber = 0;
+  EventBits_t xFlag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)UartControlTaskTracePin.Pin);
   #endif 
@@ -415,20 +418,23 @@ void vtaskUartControl(void *pvParameters)
   for (;;)
   {
     vTaskDelayUntil(&xLastWakeTime, UART_CONTROL_PERUODICTY);
-    if( ( (LINE1_STEEPER & xEventGroupGetBits(RotaryControlEvent_GRP)) == LINE1_STEEPER ) &&
+    xFlag_Bits = xEventGroupGetBits(RotaryControlEvent_GRP);
+    if( ( (LINE1_STEEPER & xFlag_Bits) == LINE1_STEEPER ) &&
         (RequiredBottelsNumber == 0) 
       )
     {
       HAL_UART_Receive(&huart1, tempRecive, 1, HAL_MAX_DELAY);
+      // *tempRecive = '5'; 
       RequiredBottelsNumber = *tempRecive - '0';
       /*start line1 stepper*/
       xEventGroupClearBits(RotaryControlEvent_GRP,LINE1_STEEPER);
 
-    }else if( ((FILLING_FLAG | CAPPING_FLAG) & xEventGroupGetBits(RotaryControlEvent_GRP)) > 0 )
+    }
+    else if( ((FILLING_FLAG | CAPPING_FLAG) & xFlag_Bits) > 0 )
     {
       if( 
-          Filling_u32counter == RequiredBottelsNumber &&
-          Capping_u32counter == RequiredBottelsNumber 
+          (Filling_u32counter == RequiredBottelsNumber) &&
+          (Capping_u32counter == RequiredBottelsNumber) 
         )
       {
         Filling_u32counter = 0;
@@ -529,15 +535,19 @@ void vApplicationTickHook(void)
 
 void Init_RTOS(void)
 {
+  NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
   Line1_stepper_semaphore = xSemaphoreCreateBinary();
   Filling_Timer_Handle = xTimerCreate(FILLING_TIMER_NAME,pdMS_TO_TICKS(4000),pdFALSE,(void *)0,vFillingTimerCallback);
   Capping_Timer_Handle = xTimerCreate(CAPPING_TIMER_NAME,pdMS_TO_TICKS(3000),pdFALSE,(void *)0,vCappingTimerCallback);
   RotaryControlEvent_GRP = xEventGroupCreate();
 
-  /*stop rotary & stop line 1 stepper */
-  xEventGroupSetBits(RotaryControlEvent_GRP,LINE1_STEEPER|BIT_0);
-  /*clear bottels flags to check if bottel still exist after filling or capping*/
- // xEventGroupClearBits(RotaryControlEvent_GRP,FILLING_BOTTEL_FLAG|CAPPING_BOTTEL_FLAG);
+  if( RotaryControlEvent_GRP != NULL )
+  {
+    /*stop rotary & stop line 1 stepper */
+    xEventGroupSetBits(RotaryControlEvent_GRP,LINE1_STEEPER|BIT_0);
+    /*clear bottels flags to check if bottel still exist after filling or capping*/
+    // xEventGroupClearBits(RotaryControlEvent_GRP,FILLING_BOTTEL_FLAG|CAPPING_BOTTEL_FLAG);
+  }
   /* start feeding */
 	xSemaphoreGive(Line1_stepper_semaphore);
 }

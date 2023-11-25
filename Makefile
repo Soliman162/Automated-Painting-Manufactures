@@ -22,9 +22,9 @@ STL = st-flash
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG = 1
 # optimization
-OPT = -O3
+OPT = -Og
 
 
 #######################################
