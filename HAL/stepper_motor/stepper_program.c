@@ -1,3 +1,4 @@
+#include "main.h"
 #include "gpio.h"
 
 #include "stepper_interface.h"
@@ -21,7 +22,7 @@ void stepper_voidRotate_RTOS(const STEPPER_Config_t * Stepper,uint8_t step)
     uint32_t stepValue = Stepper_movment_Mode[Stepper->movingSequence][step];
     for(Coil=0 ; Coil <= 3 ;Coil++)
     {
-        HAL_GPIO_WritePin(Stepper->GPIO_PORT,Stepper->Coils[Coil].Pin,READ_BIT(stepValue,Coil) );
+        HAL_GPIO_WritePin(Stepper->GPIO_PORT,Stepper->Coils[Coil].Pin,(GPIO_PinState)READ_BIT(stepValue,Coil));
     }
 }
 

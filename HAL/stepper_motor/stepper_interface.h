@@ -19,7 +19,7 @@ typedef enum
     SPEED_7,
     SPEED_8,
     SPEED_9,
-    SPEED_10
+    MIN_SPEED
 }SPEED;
 
 typedef struct 

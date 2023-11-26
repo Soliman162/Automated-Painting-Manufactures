@@ -44,16 +44,12 @@
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                                                                         						 */
-#define RED       0
-#define BLUE      1
-#define YELLOW    2
-
-#define BIT_0	( 1 << 0 )
-#define BIT_1	( 1 << 1 )  
-#define BIT_2	( 1 << 2 )
-#define BIT_3	( 1 << 3 )
-#define BIT_4	( 1 << 4 )
-#define BIT_5	( 1 << 5 )
+#define BIT_0	              ( 1 << 0 )
+#define BIT_1	              ( 1 << 1 )  
+#define BIT_2	              ( 1 << 2 )
+#define BIT_3	              ( 1 << 3 )
+#define BIT_4	              ( 1 << 4 )
+#define BIT_5	              ( 1 << 5 )
 
 #define FILLING_FLAG          BIT_1
 #define CAPPING_FLAG          BIT_2
@@ -63,24 +59,22 @@
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                       HW Configrations                                  						 */
-// 14 15
+// 14 15 uart1 A9 A10 uart2 A3 A2 
 #define IR_PORT               GPIOA
 #define PUMP_PORT             GPIOA
 #define CAPPING_MOTOR_PORT    GPIOA
 #define CAPPING_VALVE_PORT    GPIOA
 
-#define CAPPING_MOTOR_CW_PIN  GPIO_PIN_2
-#define CAPPING_MOTOR_CCW_PIN GPIO_PIN_3
+#define CAPPING_MOTOR_CW_PIN    GPIO_PIN_14
+#define CAPPING_MOTOR_CCW_PIN   GPIO_PIN_15
 
-#define RED_PUMP_PIN          GPIO_PIN_4
-#define BLUE_PUMP_PIN         GPIO_PIN_5
-#define YELLOW_PUMP_PIN       GPIO_PIN_6
 #define Filling_Pump_PIN      GPIO_PIN_7
 
 #define CAPPING_VALVE_PIN     GPIO_PIN_8
 #define FEEDING_IR_PIN        GPIO_PIN_11
 #define CAPPING_IR_PIN        GPIO_PIN_12
-#define FILLING_IR_PIN        GPIO_PIN_13
+
+#define FILLING_IR_PIN        GPIO_PIN_6
 
 #define STEPPER_PORT          GPIOB
 
@@ -117,22 +111,21 @@
 #define FILLING_TIMER_NAME        (char * )"Filling Timer"
 /*******************************************************************************************************/
 /*******************************************************************************************************/
-/*                                     Tasks perodicty                                                 */
-
-#define FILLING_CONTROL_PERODICTY       200	
-#define CAPPING_CONTROL_PERODICTY       200  
+/*                                     Tasks perodicties                                               */
+#define FILLING_CONTROL_PERODICTY       100	
+#define CAPPING_CONTROL_PERODICTY       150  
 #define FEEDING_CONTROL_PERODICTY       200  
 #define UART_CONTROL_PERUODICTY         500  
 /*******************************************************************************************************/
 /*******************************************************************************************************/
-/*                                     Tasks priority                                                  */
-#define 	FEEDING_TASK_PRIORITY					4
-#define 	CAPPING_TASK_PRIORITY					5
-#define 	FILLING_TASK_PRIORITY					5
-#define 	ROTATE_LINE1_TASK_PRIORITY		2
-#define 	ROTATE_LINE2_TASK_PRIORITY		1
-#define 	ROTATE_ROTARY_TASK_PRIORITY		3
-#define 	UART_CONTROL_TASK_PRIORITY		3
+/*                                     Tasks priorities                                                */
+#define 	FEEDING_TASK_PRIORITY					(tskIDLE_PRIORITY+2)//4
+#define 	CAPPING_TASK_PRIORITY					(tskIDLE_PRIORITY+3)//5
+#define 	FILLING_TASK_PRIORITY					(tskIDLE_PRIORITY+4)//5
+#define 	ROTATE_LINE1_TASK_PRIORITY		(tskIDLE_PRIORITY+6)//2
+#define 	ROTATE_LINE2_TASK_PRIORITY		(tskIDLE_PRIORITY+5)//1
+#define 	ROTATE_ROTARY_TASK_PRIORITY		(tskIDLE_PRIORITY+7)//3
+#define 	UART_CONTROL_TASK_PRIORITY		(tskIDLE_PRIORITY+1)//3
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                       HW Components                                                 */
@@ -214,7 +207,7 @@ static inline void InitTracePins(void);
 
 void vFillingTimerCallback( TimerHandle_t xTimer )
 {
-  uint32_t Expired_Counter = 0;
+  volatile uint32_t Expired_Counter = 0;
   vPortEnterCritical();
   /* Optionally do something if the pxTimer parameter is NULL. */
   configASSERT( xTimer );
@@ -231,7 +224,7 @@ void vFillingTimerCallback( TimerHandle_t xTimer )
 
 void vCappingTimerCallback( TimerHandle_t xTimer )
 {
-  uint32_t Expired_Counter = 0;
+  volatile uint32_t Expired_Counter = 0;
   vPortEnterCritical();
   /* Optionally do something if the pxTimer parameter is NULL. */
   configASSERT(xTimer);
@@ -338,6 +331,7 @@ void vtaskRotateRotary(void *pvParameters)
   uint8_t Step_Counter = 0;
   uint8_t end = Rotary_Stepper.movingSequence == HALF_STEP ?8:4;
   TickType_t perodicty = Rotary_Stepper.speed*10;
+  EventBits_t Flag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)RotaryTaskTracePin.Pin);
   #endif
@@ -345,12 +339,13 @@ void vtaskRotateRotary(void *pvParameters)
   for (;;)
   {
     vTaskDelayUntil(&xLastWakeTime, perodicty);
-    if( ( (BIT_0|FILLING_FLAG|CAPPING_FLAG) & xEventGroupGetBits(RotaryControlEvent_GRP) ) == 0 )
+    Flag_Bits = xEventGroupGetBits(RotaryControlEvent_GRP);
+    if( ( (BIT_0|FILLING_FLAG|CAPPING_FLAG) & Flag_Bits ) == 0 )
     {
       stepper_voidRotate_RTOS(&Rotary_Stepper,step);
       step = (step+1) % end;
-      if( ( ( FILLING_BOTTEL_FLAG & xEventGroupGetBits(RotaryControlEvent_GRP) ) == FILLING_BOTTEL_FLAG ) ||
-          ( ( CAPPING_BOTTEL_FLAG & xEventGroupGetBits(RotaryControlEvent_GRP) ) == CAPPING_BOTTEL_FLAG )
+      if( ( ( FILLING_BOTTEL_FLAG & Flag_Bits ) == FILLING_BOTTEL_FLAG ) ||
+          ( ( CAPPING_BOTTEL_FLAG & Flag_Bits ) == CAPPING_BOTTEL_FLAG )
         )
       {
         if(++Step_Counter > 25 )
@@ -407,10 +402,10 @@ void vtaskRotateLine2(void *pvParameters)
 
 void vtaskUartControl(void *pvParameters)
 {
-  uint8_t *tempRecive = '\0';
+  uint8_t tempRecive = '\0' ;
   char Message_buffer[50];
   uint8_t RequiredBottelsNumber = 0;
-  EventBits_t xFlag_Bits = 0;
+  volatile EventBits_t xFlag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)UartControlTaskTracePin.Pin);
   #endif 
@@ -423,12 +418,19 @@ void vtaskUartControl(void *pvParameters)
         (RequiredBottelsNumber == 0) 
       )
     {
-      HAL_UART_Receive(&huart1, tempRecive, 1, HAL_MAX_DELAY);
-      // *tempRecive = '5'; 
-      RequiredBottelsNumber = *tempRecive - '0';
-      /*start line1 stepper*/
-      xEventGroupClearBits(RotaryControlEvent_GRP,LINE1_STEEPER);
-
+      HAL_UART_Receive(&huart2, (uint8_t *)&tempRecive, 1, HAL_MAX_DELAY);
+      if( (tempRecive == '\0') &&
+          !( (tempRecive>='0') && (tempRecive<='9)') )
+       )
+      {
+        tempRecive = '0';
+      }
+      else
+      {
+        RequiredBottelsNumber = tempRecive - '0';
+        /*start line1 stepper*/
+        xEventGroupClearBits(RotaryControlEvent_GRP,LINE1_STEEPER);
+      }
     }
     else if( ((FILLING_FLAG | CAPPING_FLAG) & xFlag_Bits) > 0 )
     {
@@ -448,11 +450,11 @@ void vtaskUartControl(void *pvParameters)
         vTimerSetTimerID( Capping_Timer_Handle , (void *)RESET );
       } 
       memset(Message_buffer,'\0',50);
-      sprintf(Message_buffer,"Filled Bottels number = %ld",Filling_u32counter);
-      HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
+      sprintf(Message_buffer,"Filled Bottels number = %ld \r\n",Filling_u32counter);
+      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
       memset(Message_buffer,'\0',50);
-      sprintf(Message_buffer,"Capping Bottels number = %ld",Capping_u32counter);
-      HAL_UART_Transmit(&huart1, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
+      sprintf(Message_buffer,"Capping Bottels number = %ld \r\n",Capping_u32counter);
+      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
     }
   }
 }
@@ -517,7 +519,7 @@ int main(void)
   xTaskCreate(vtaskRotateRotary,ROTATE_ROTARY_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_ROTARY_TASK_PRIORITY,&Rotate_Rotary_Task_Handle);
                                               /*Uart Control task*/
   xTaskCreate(vtaskUartControl,UART_CONTROL_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,UART_CONTROL_TASK_PRIORITY,&Uart_Control_Task_Handle);
-
+  
   vTaskStartScheduler();
   for (;;)
 
@@ -531,6 +533,29 @@ void vApplicationTickHook(void)
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_RESET);
   #endif
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+  volatile TickType_t xLastWakeTime_Tick = (xTaskGetTickCountFromISR() / portTICK_PERIOD_MS);
+  
+}
+
+void vApplicationStackOverflowHook( TaskHandle_t xTask,
+                                        char * pcTaskName )
+{
+  while (1)
+  {
+    /* code */
+  }
+  
+}
+
+void vApplicationMallocFailedHook( void )
+{
+  while (1)
+  {
+    /* code */
+  }
+  
 }
 
 void Init_RTOS(void)
@@ -546,7 +571,7 @@ void Init_RTOS(void)
     /*stop rotary & stop line 1 stepper */
     xEventGroupSetBits(RotaryControlEvent_GRP,LINE1_STEEPER|BIT_0);
     /*clear bottels flags to check if bottel still exist after filling or capping*/
-    // xEventGroupClearBits(RotaryControlEvent_GRP,FILLING_BOTTEL_FLAG|CAPPING_BOTTEL_FLAG);
+    xEventGroupClearBits(RotaryControlEvent_GRP,FILLING_BOTTEL_FLAG|CAPPING_BOTTEL_FLAG);
   }
   /* start feeding */
 	xSemaphoreGive(Line1_stepper_semaphore);
@@ -583,13 +608,19 @@ void Setup_HardWare(void)
                                       (GPIO_InitTypeDef){CAPPING_MOTOR_CCW_PIN, GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH} 
                                       } 
                                      };
+  
   Filling_Pump = (PUMP_Config_t){PUMP_PORT,(GPIO_InitTypeDef){Filling_Pump_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
+  
   Capping_Valve = (VALVE_Config_t){CAPPING_VALVE_PORT,(GPIO_InitTypeDef){CAPPING_VALVE_PIN,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}};
+  
   Filling_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){FILLING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  
   Capping_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){CAPPING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  
   Feeding_IR = (IR_Config_t){IR_PORT,(GPIO_InitTypeDef){FEEDING_IR_PIN,GPIO_MODE_INPUT,GPIO_PULLUP,GPIO_SPEED_FREQ_HIGH}};
+  
   Line1_Stepper = (STEPPER_Config_t){
-                                      (SPEED)SPEED_5,
+                                      (SPEED)SPEED_5,//5
                                       (MVType)WAVE_DRIVE,
                                       STEPPER_PORT,
                                     {
@@ -599,8 +630,9 @@ void Setup_HardWare(void)
                                       (GPIO_InitTypeDef){LINE1_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                     }                                   
                                     } ;
+  
   Line2_Stepper = (STEPPER_Config_t){
-                                      (SPEED)SPEED_5,
+                                      (SPEED)MIN_SPEED,//10
                                       (MVType)WAVE_DRIVE,
                                       STEPPER_PORT,
                                      {
@@ -610,8 +642,9 @@ void Setup_HardWare(void)
                                       (GPIO_InitTypeDef){LINE2_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                     }
                                     } ;
+  
   Rotary_Stepper =  (STEPPER_Config_t){
-                                        (SPEED)MAX_SPEED,
+                                        (SPEED)MAX_SPEED,//2
                                         (MVType)WAVE_DRIVE,
                                         STEPPER_PORT,
                                       {
@@ -621,14 +654,22 @@ void Setup_HardWare(void)
                                         (GPIO_InitTypeDef){ROTARY_STEPPER_PIN3,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH}
                                       }
                                       } ;							
-  DCMotor_voidInit(&Capping_motor);
-  VALVE_voidInit(&Capping_Valve);
-  IR_voidInit(&Filling_IR);
-  IR_voidInit(&Capping_IR);
-  IR_voidInit(&Feeding_IR);
-  Stepper_voidInit(&Line1_Stepper);
-  Stepper_voidInit(&Line2_Stepper);
-  Stepper_voidInit(&Rotary_Stepper);
+ 
+ DCMotor_voidInit(&Capping_motor);
+ 
+ VALVE_voidInit(&Capping_Valve);
+ 
+ IR_voidInit(&Filling_IR);
+ 
+ IR_voidInit(&Capping_IR);
+ 
+ IR_voidInit(&Feeding_IR);
+ 
+ Stepper_voidInit(&Line1_Stepper);
+ 
+ Stepper_voidInit(&Line2_Stepper);
+ 
+ Stepper_voidInit(&Rotary_Stepper);
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	InitTracePins();
   #endif
