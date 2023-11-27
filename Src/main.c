@@ -419,13 +419,11 @@ void vtaskUartControl(void *pvParameters)
       )
     {
       HAL_UART_Receive(&huart2, (uint8_t *)&tempRecive, 1, HAL_MAX_DELAY);
-      if( (tempRecive == '\0') &&
-          !( (tempRecive>='0') && (tempRecive<='9)') )
+      if( 
+          (tempRecive>='0') && 
+          (tempRecive<='9') &&
+          (tempRecive != '\0') 
        )
-      {
-        tempRecive = '0';
-      }
-      else
       {
         RequiredBottelsNumber = tempRecive - '0';
         /*start line1 stepper*/
