@@ -1,4 +1,3 @@
-#include "main.h"
 #include "gpio.h"
 
 #include "stepper_interface.h"

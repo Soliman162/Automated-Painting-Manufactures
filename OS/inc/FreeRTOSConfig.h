@@ -56,10 +56,15 @@
 #define configUSE_MUTEXES			0
 
 #define configCHECK_FOR_STACK_OVERFLOW 	2
-
 #define configUSE_MALLOC_FAILED_HOOK	1
-#define configASSERT_DEFINED 1
-#define configASSERT( x )    { if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); } }
+
+#define configASSERT_DEFINED 0
+
+/* Define configASSERT() to call vAssertCalled() if the assertion fails.  The assertion
+has failed if the value of the parameter passed into configASSERT() equals zero. */
+// #define configASSERT ( x )     if( ( x ) == 0 ) vAssertCalled( __FILE__, __LINE__ )
+
+// #define configASSERT( x )    { if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); } }
 
 #define configUSE_APPLICATION_TASK_TAG 			1
 
@@ -81,11 +86,11 @@ to exclude the API function. */
 
 #define INCLUDE_vTaskPrioritySet		0
 #define INCLUDE_uxTaskPriorityGet		0
-#define INCLUDE_vTaskDelete				1
+#define INCLUDE_vTaskDelete				0
 #define INCLUDE_vTaskCleanUpResources	0
-#define INCLUDE_vTaskSuspend			1
+#define INCLUDE_vTaskSuspend			0
 #define INCLUDE_vTaskDelayUntil			1
-#define INCLUDE_vTaskDelay				1
+#define INCLUDE_vTaskDelay				0
 
 /* This is the raw value as per the Cortex-M3 NVIC.  Values can be 255
 (lowest) to 0 (1?) (highest). */

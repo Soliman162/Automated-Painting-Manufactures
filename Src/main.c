@@ -329,8 +329,8 @@ void vtaskRotateRotary(void *pvParameters)
 {
   uint8_t step = 0;
   uint8_t Step_Counter = 0;
-  uint8_t end = Rotary_Stepper.movingSequence == HALF_STEP ?8:4;
-  TickType_t perodicty = Rotary_Stepper.speed*10;
+  const uint8_t end = Rotary_Stepper.movingSequence == HALF_STEP ?8:4;
+  const TickType_t perodicty = Rotary_Stepper.speed*10;
   EventBits_t Flag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)RotaryTaskTracePin.Pin);
@@ -362,8 +362,8 @@ void vtaskRotateRotary(void *pvParameters)
 void vtaskRotateLine1(void *pvParameters)
 {
   uint8_t step = 0;
-  uint8_t end = Line1_Stepper.movingSequence == HALF_STEP ?8:4;
-  TickType_t perodicty = Line1_Stepper.speed*10;
+  const uint8_t end = Line1_Stepper.movingSequence == HALF_STEP ?8:4;
+  const TickType_t perodicty = Line1_Stepper.speed*10;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)line1TaskTracePin.Pin);
   #endif
@@ -386,8 +386,8 @@ void vtaskRotateLine1(void *pvParameters)
 void vtaskRotateLine2(void *pvParameters)
 {
   uint8_t step = 0;
-  uint8_t end = Line2_Stepper.movingSequence == HALF_STEP ?8:4;
-  TickType_t perodicty = Line2_Stepper.speed*10;
+  const uint8_t end = Line2_Stepper.movingSequence == HALF_STEP ?8:4;
+  const TickType_t perodicty = Line2_Stepper.speed*10;
   #if configKEIL_TIMELINE_ANALYSIS == 1
 	vTaskSetApplicationTaskTag(NULL,(void *)line2TaskTracePin.Pin);
   #endif
@@ -432,6 +432,12 @@ void vtaskUartControl(void *pvParameters)
     }
     else if( ((FILLING_FLAG | CAPPING_FLAG) & xFlag_Bits) > 0 )
     {
+      memset(Message_buffer,'\0',50);
+      sprintf(Message_buffer,"Filled Bottels number = %ld \r\n",Filling_u32counter);
+      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
+      memset(Message_buffer,'\0',50);
+      sprintf(Message_buffer,"Capping Bottels number = %ld \r\n",Capping_u32counter);
+      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
       if( 
           (Filling_u32counter == RequiredBottelsNumber) &&
           (Capping_u32counter == RequiredBottelsNumber) 
@@ -447,12 +453,6 @@ void vtaskUartControl(void *pvParameters)
         vTimerSetTimerID( Filling_Timer_Handle , (void *)RESET );
         vTimerSetTimerID( Capping_Timer_Handle , (void *)RESET );
       } 
-      memset(Message_buffer,'\0',50);
-      sprintf(Message_buffer,"Filled Bottels number = %ld \r\n",Filling_u32counter);
-      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
-      memset(Message_buffer,'\0',50);
-      sprintf(Message_buffer,"Capping Bottels number = %ld \r\n",Capping_u32counter);
-      HAL_UART_Transmit(&huart2, (const uint8_t *)Message_buffer, sizeof(Message_buffer), HAL_MAX_DELAY);
     }
   }
 }
@@ -531,10 +531,6 @@ void vApplicationTickHook(void)
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOA, Tick_pin.Pin, GPIO_PIN_RESET);
   #endif
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
-  volatile TickType_t xLastWakeTime_Tick = (xTaskGetTickCountFromISR() / portTICK_PERIOD_MS);
-  
 }
 
 void vApplicationStackOverflowHook( TaskHandle_t xTask,
