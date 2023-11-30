@@ -112,20 +112,20 @@
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                     Tasks perodicties                                               */
-#define FILLING_CONTROL_PERODICTY       100	
-#define CAPPING_CONTROL_PERODICTY       150  
-#define FEEDING_CONTROL_PERODICTY       200  
+#define FILLING_CONTROL_PERODICTY       150	
+#define CAPPING_CONTROL_PERODICTY       200  
+#define FEEDING_CONTROL_PERODICTY       250  
 #define UART_CONTROL_PERUODICTY         500  
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                     Tasks priorities                                                */
-#define 	FEEDING_TASK_PRIORITY					(tskIDLE_PRIORITY+2)//4
-#define 	CAPPING_TASK_PRIORITY					(tskIDLE_PRIORITY+3)//5
-#define 	FILLING_TASK_PRIORITY					(tskIDLE_PRIORITY+4)//5
-#define 	ROTATE_LINE1_TASK_PRIORITY		(tskIDLE_PRIORITY+6)//2
-#define 	ROTATE_LINE2_TASK_PRIORITY		(tskIDLE_PRIORITY+5)//1
-#define 	ROTATE_ROTARY_TASK_PRIORITY		(tskIDLE_PRIORITY+7)//3
-#define 	UART_CONTROL_TASK_PRIORITY		(tskIDLE_PRIORITY+1)//3
+#define 	FEEDING_TASK_PRIORITY					(tskIDLE_PRIORITY+2)
+#define 	CAPPING_TASK_PRIORITY					(tskIDLE_PRIORITY+3)
+#define 	FILLING_TASK_PRIORITY					(tskIDLE_PRIORITY+4)
+#define 	ROTATE_LINE1_TASK_PRIORITY		(tskIDLE_PRIORITY+6)
+#define 	ROTATE_LINE2_TASK_PRIORITY		(tskIDLE_PRIORITY+5)
+#define 	ROTATE_ROTARY_TASK_PRIORITY		(tskIDLE_PRIORITY+7)
+#define 	UART_CONTROL_TASK_PRIORITY		(tskIDLE_PRIORITY+1)
 /*******************************************************************************************************/
 /*******************************************************************************************************/
 /*                                       HW Components                                                 */
@@ -147,17 +147,14 @@ STEPPER_Config_t Rotary_Stepper ;
 /*                                       Trace pins	                                           		     */
 // tick -->0   task portA--> 1 14 15 13 12  tasks portC--> 13 14 15
 #if configKEIL_TIMELINE_ANALYSIS == 1
-GPIO_InitTypeDef Tick_pin = (GPIO_InitTypeDef){GPIO_PIN_0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-
-GPIO_InitTypeDef FeddingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_13,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-GPIO_InitTypeDef CappingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_14,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-GPIO_InitTypeDef FillingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_15,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-
-GPIO_InitTypeDef line1TaskTracePin  =(GPIO_InitTypeDef){GPIO_PIN_13,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-GPIO_InitTypeDef line2TaskTracePin  =(GPIO_InitTypeDef){GPIO_PIN_14,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-GPIO_InitTypeDef RotaryTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_15,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
-
-GPIO_InitTypeDef UartControlTaskTracePin = (GPIO_InitTypeDef){GPIO_PIN_1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+#define FEDDINGTASKTRACEPIN				GPIO_PIN_0
+#define CAPPINGTASKTRACEPIN				GPIO_PIN_1
+#define FILLINGTASKTRACEPIN				GPIO_PIN_4
+#define UARTCONTROLTASKTRACEPIN		GPIO_PIN_5
+//port C
+#define  LINE1TASKTRACEPIN				GPIO_PIN_13
+#define  LINE2TASKTRACEPIN				GPIO_PIN_14
+#define  ROTARYTASKTRACEPIN				GPIO_PIN_15
 #endif
 /*******************************************************************************************************/
 /*******************************************************************************************************/
@@ -203,7 +200,7 @@ static inline void InitTracePins(void);
 #endif
 /*******************************************************************************************************/
 /*******************************************************************************************************/
-/*                                  CallBack Functions                                                 */
+/*                                 Timer CallBack Functions                                            */
 
 void vFillingTimerCallback( TimerHandle_t xTimer )
 {
@@ -245,14 +242,15 @@ void vCappingTimerCallback( TimerHandle_t xTimer )
 // 100 us
 void vtaskFeedingCotrol(void *pvParameters)
 {
+  const TickType_t xFrequency = pdMS_TO_TICKS(FEEDING_CONTROL_PERODICTY);
   EXISTANCE Check_Flag = OBJECT_ABSENT;
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	  vTaskSetApplicationTaskTag( NULL, ( void * ) (FeddingTaskTracePin.Pin+GPIO_PIN_13) );
+	  vTaskSetApplicationTaskTag( NULL, ( void * )FEDDINGTASKTRACEPIN );
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
-    vTaskDelayUntil(&xLastWakeTime, FEEDING_CONTROL_PERODICTY);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
     Check_voidObject_Existance(&Feeding_IR, &Check_Flag);
 
     if ( (Check_Flag == OBJECT_PRESENT) && 
@@ -268,14 +266,15 @@ void vtaskFeedingCotrol(void *pvParameters)
 /* 0.3 ms */
 void vtaskFillingCotrol(void *pvParameters)
 {
+  const TickType_t xFrequency = pdMS_TO_TICKS(FILLING_CONTROL_PERODICTY);
   EXISTANCE Check_Flag = OBJECT_ABSENT;
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)(FillingTaskTracePin.Pin+GPIO_PIN_13));
+	vTaskSetApplicationTaskTag(NULL,(void *)FILLINGTASKTRACEPIN);
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
-    vTaskDelayUntil(&xLastWakeTime, FILLING_CONTROL_PERODICTY);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
     Check_voidObject_Existance(&Filling_IR, &Check_Flag);
     if ( (Check_Flag == OBJECT_PRESENT) &&
          ((FILLING_BOTTEL_FLAG & xEventGroupGetBits(RotaryControlEvent_GRP)) == 0) 
@@ -298,14 +297,15 @@ void vtaskFillingCotrol(void *pvParameters)
 /* 0.2215 ms */
 void vtaskCappingCotrol(void *pvParameters)
 {
+  const TickType_t xFrequency = pdMS_TO_TICKS(CAPPING_CONTROL_PERODICTY);
   EXISTANCE Check_flag = OBJECT_ABSENT;
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)(CappingTaskTracePin.Pin+GPIO_PIN_13) );
+	vTaskSetApplicationTaskTag(NULL,(void *)CAPPINGTASKTRACEPIN );
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
-    vTaskDelayUntil(&xLastWakeTime, CAPPING_CONTROL_PERODICTY);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
     Check_voidObject_Existance(&Capping_IR, &Check_flag);
     if ( (Check_flag == OBJECT_PRESENT) &&
          ((CAPPING_BOTTEL_FLAG & xEventGroupGetBits(RotaryControlEvent_GRP)) == 0)
@@ -330,10 +330,10 @@ void vtaskRotateRotary(void *pvParameters)
   uint8_t step = 0;
   uint8_t Step_Counter = 0;
   const uint8_t end = Rotary_Stepper.movingSequence == HALF_STEP ?8:4;
-  const TickType_t perodicty = Rotary_Stepper.speed*10;
+  const TickType_t perodicty = pdMS_TO_TICKS(Rotary_Stepper.speed*10);
   EventBits_t Flag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)RotaryTaskTracePin.Pin);
+	vTaskSetApplicationTaskTag(NULL,(void *)ROTARYTASKTRACEPIN);
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
@@ -363,9 +363,9 @@ void vtaskRotateLine1(void *pvParameters)
 {
   uint8_t step = 0;
   const uint8_t end = Line1_Stepper.movingSequence == HALF_STEP ?8:4;
-  const TickType_t perodicty = Line1_Stepper.speed*10;
+  const TickType_t perodicty = pdMS_TO_TICKS(Line1_Stepper.speed*10);
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)line1TaskTracePin.Pin);
+	vTaskSetApplicationTaskTag(NULL,(void *)LINE1TASKTRACEPIN);
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
@@ -387,9 +387,9 @@ void vtaskRotateLine2(void *pvParameters)
 {
   uint8_t step = 0;
   const uint8_t end = Line2_Stepper.movingSequence == HALF_STEP ?8:4;
-  const TickType_t perodicty = Line2_Stepper.speed*10;
+  const TickType_t perodicty = pdMS_TO_TICKS(Line2_Stepper.speed*10);
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)line2TaskTracePin.Pin);
+	vTaskSetApplicationTaskTag(NULL,(void *)LINE2TASKTRACEPIN);
   #endif
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
@@ -402,17 +402,18 @@ void vtaskRotateLine2(void *pvParameters)
 
 void vtaskUartControl(void *pvParameters)
 {
+  const TickType_t xFrequency = pdMS_TO_TICKS(UART_CONTROL_PERUODICTY);
   uint8_t tempRecive = '\0' ;
   char Message_buffer[50];
   uint8_t RequiredBottelsNumber = 0;
   volatile EventBits_t xFlag_Bits = 0;
   #if configKEIL_TIMELINE_ANALYSIS == 1
-	vTaskSetApplicationTaskTag(NULL,(void *)UartControlTaskTracePin.Pin);
+	vTaskSetApplicationTaskTag(NULL,(void *)UARTCONTROLTASKTRACEPIN);
   #endif 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for (;;)
   {
-    vTaskDelayUntil(&xLastWakeTime, UART_CONTROL_PERUODICTY);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
     xFlag_Bits = xEventGroupGetBits(RotaryControlEvent_GRP);
     if( ( (LINE1_STEEPER & xFlag_Bits) == LINE1_STEEPER ) &&
         (RequiredBottelsNumber == 0) 
@@ -457,45 +458,20 @@ void vtaskUartControl(void *pvParameters)
   }
 }
 /*******************************************************************************************************/
-
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
 /**
   * @brief  The application entry point.
   * @retval int
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART1_UART_Init();
@@ -504,19 +480,75 @@ int main(void)
   Setup_HardWare();
   Init_RTOS();
                                               /*feeding task*/
-  xTaskCreate(vtaskFeedingCotrol,FEEDING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,FEEDING_TASK_PRIORITY,&Feeding_Task_Handle);
+  if (xTaskCreate(vtaskFeedingCotrol,
+                  FEEDING_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  FEEDING_TASK_PRIORITY,
+                  &Feeding_Task_Handle) == pdPASS )
+  {
+    HAL_Delay(20);
+  }
                                               /*Filling task*/
-  xTaskCreate(vtaskFillingCotrol,FILLING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,FILLING_TASK_PRIORITY,&Filling_Task_Handle);
+  if (xTaskCreate(vtaskFillingCotrol,
+                  FILLING_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  FILLING_TASK_PRIORITY,
+                  &Filling_Task_Handle) == pdPASS)
+  {
+    HAL_Delay(20);
+  }
                                               /*Capping task*/
-  xTaskCreate(vtaskCappingCotrol,CAPPING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,CAPPING_TASK_PRIORITY,&Capping_Task_Handle);
+  if (xTaskCreate(vtaskCappingCotrol,
+                  CAPPING_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  CAPPING_TASK_PRIORITY,
+                  &Capping_Task_Handle) ==pdPASS )
+  {
+    HAL_Delay(20);
+  }
                                               /*Rotate line1 task*/
-  xTaskCreate(vtaskRotateLine1,ROTATE_LINE1_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_LINE1_TASK_PRIORITY,&Rotate_Line1_Task_Handle);
+  if ( xTaskCreate(vtaskRotateLine1,
+                  ROTATE_LINE1_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  ROTATE_LINE1_TASK_PRIORITY,
+                  &Rotate_Line1_Task_Handle) == pdPASS )
+  {
+    HAL_Delay(20);
+  }
                                               /*Rotate line2 task*/
-  xTaskCreate(vtaskRotateLine2,ROTATE_LINE2_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_LINE2_TASK_PRIORITY,&Rotate_Line2_Task_Handle);
+  if (xTaskCreate(vtaskRotateLine2,
+                  ROTATE_LINE2_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  ROTATE_LINE2_TASK_PRIORITY,
+                  &Rotate_Line2_Task_Handle) == pdPASS )
+  {
+    HAL_Delay(20);
+  }
                                               /*Rotate Rotary task*/
-  xTaskCreate(vtaskRotateRotary,ROTATE_ROTARY_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_ROTARY_TASK_PRIORITY,&Rotate_Rotary_Task_Handle);
+  if (xTaskCreate(vtaskRotateRotary,
+                  ROTATE_ROTARY_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  ROTATE_ROTARY_TASK_PRIORITY,
+                  &Rotate_Rotary_Task_Handle) == pdPASS)
+  {
+    HAL_Delay(20);
+  }
                                               /*Uart Control task*/
-  xTaskCreate(vtaskUartControl,UART_CONTROL_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,UART_CONTROL_TASK_PRIORITY,&Uart_Control_Task_Handle);
+  if (xTaskCreate(vtaskUartControl,
+                  UART_CONTROL_TASK_NAME,
+                  configMINIMAL_STACK_SIZE,
+                  (void *)NULL,
+                  UART_CONTROL_TASK_PRIORITY,
+                  &Uart_Control_Task_Handle) == pdPASS)
+  {
+    HAL_Delay(20);
+  }
   
   vTaskStartScheduler();
   for (;;)
@@ -573,7 +605,15 @@ void Init_RTOS(void)
 #if configKEIL_TIMELINE_ANALYSIS == 1
 static inline void InitTracePins(void)
 {
-  HAL_GPIO_Init(GPIOA,&Tick_pin);
+	GPIO_InitTypeDef FeddingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_0,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+	GPIO_InitTypeDef CappingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+	GPIO_InitTypeDef FillingTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_4,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+	GPIO_InitTypeDef UartControlTaskTracePin = (GPIO_InitTypeDef){GPIO_PIN_5,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+
+	GPIO_InitTypeDef line1TaskTracePin  =(GPIO_InitTypeDef){GPIO_PIN_13,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+	GPIO_InitTypeDef line2TaskTracePin  =(GPIO_InitTypeDef){GPIO_PIN_14,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+	GPIO_InitTypeDef RotaryTaskTracePin =(GPIO_InitTypeDef){GPIO_PIN_15,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,GPIO_SPEED_FREQ_HIGH};
+  //HAL_GPIO_Init(GPIOA,&Tick_pin);
 	HAL_GPIO_Init(GPIOC,&FeddingTaskTracePin);
 	HAL_GPIO_Init(GPIOC,&CappingTaskTracePin);
 	HAL_GPIO_Init(GPIOC,&FillingTaskTracePin);
@@ -582,7 +622,7 @@ static inline void InitTracePins(void)
 	HAL_GPIO_Init(GPIOA,&RotaryTaskTracePin);
 	HAL_GPIO_Init(GPIOA,&UartControlTaskTracePin);
 						
-  HAL_GPIO_WritePin(GPIOA,Tick_pin.Pin,GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(GPIOA,Tick_pin.Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOC,FeddingTaskTracePin.Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOC,CappingTaskTracePin.Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOC,FillingTaskTracePin.Pin,GPIO_PIN_RESET);

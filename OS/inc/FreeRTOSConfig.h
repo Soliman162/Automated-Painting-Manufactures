@@ -45,7 +45,7 @@
 #define configUSE_IDLE_HOOK			0
 #define configUSE_TICK_HOOK			1
 #define configCPU_CLOCK_HZ			( ( unsigned long ) 72000000 )	
-#define configTICK_RATE_HZ			( ( TickType_t ) 500 )
+#define configTICK_RATE_HZ			( ( TickType_t ) 2000 )
 #define configMAX_PRIORITIES		( 8 )
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 150 )
 #define configTOTAL_HEAP_SIZE		( ( size_t ) ( 15 * 1024 ) )
@@ -110,34 +110,34 @@ NVIC value of 255. */
 #define configKEIL_TIMELINE_ANALYSIS	0
 
 #if configKEIL_TIMELINE_ANALYSIS == 1
-#define traceTASK_SWITCHED_IN()	 																																									\
-									do																																									\
-									{																																										\
-										int TaskTag = (int)xTaskGetApplicationTaskTag( NULL );														\
-										if( (TaskTag >= (GPIO_PIN_13*2) ) && (TaskTag <= (GPIO_PIN_15+GPIO_PIN_13)) )										\
-										{																																									\
-											HAL_GPIO_WritePin(GPIOC,(TaskTag-GPIO_PIN_13),GPIO_PIN_SET);			\
-										}																																									\
-										else																																							\
-										{																																									\
-											HAL_GPIO_WritePin(GPIOA,TaskTag,GPIO_PIN_SET);							\
-										}																																									\
-									}																																										\
+#define traceTASK_SWITCHED_IN()\
+									do\
+									{\
+										int TaskTag = (int)xTaskGetApplicationTaskTag( NULL \
+										if( TaskTag > (int)GPIO_PIN_5 )\
+										{\
+											HAL_GPIO_WritePin(GPIOC,(uint16_t)TaskTag,GPIO_PIN_SET);\
+										}\
+										else\
+										{\
+											HAL_GPIO_WritePin(GPIOA,(uint16_t)TaskTag,GPIO_PIN_SET);\
+										}\
+									}\
 									while(0)		
 
-#define traceTASK_SWITCHED_OUT()																																									\
-									do																																									\
-									{																																										\
-										int TaskTag = (int)xTaskGetApplicationTaskTag( NULL );														\
-										if( (TaskTag >= (GPIO_PIN_13*2) ) && (TaskTag <= (GPIO_PIN_15+GPIO_PIN_13)) )										\
-										{																																									\
-											HAL_GPIO_WritePin(GPIOC,(TaskTag-GPIO_PIN_13),GPIO_PIN_RESET);			\
-										}																																									\
-										else																																							\
-										{																																									\
-											HAL_GPIO_WritePin(GPIOA,TaskTag,GPIO_PIN_RESET);								\
-										}																																									\
-									}																																										\
+#define traceTASK_SWITCHED_OUT()\
+									do\
+									{\
+										int TaskTag = (int)xTaskGetApplicationTaskTag( NULL \
+										if( TaskTag > (int)GPIO_PIN_5  )\
+										{\
+											HAL_GPIO_WritePin(GPIOC,(uint16_t)TaskTag,GPIO_PIN_RESET);\
+										}\
+										else\
+										{\
+											HAL_GPIO_WritePin(GPIOA,(uint16_t)TaskTag,GPIO_PIN_RESET);\
+										}\
+									}\
 									while(0)	
 
 #endif
