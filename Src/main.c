@@ -479,76 +479,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Setup_HardWare();
   Init_RTOS();
-                                              /*feeding task*/
-  if (xTaskCreate(vtaskFeedingCotrol,
-                  FEEDING_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  FEEDING_TASK_PRIORITY,
-                  &Feeding_Task_Handle) == pdPASS )
-  {
-    HAL_Delay(20);
-  }
-                                              /*Filling task*/
-  if (xTaskCreate(vtaskFillingCotrol,
-                  FILLING_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  FILLING_TASK_PRIORITY,
-                  &Filling_Task_Handle) == pdPASS)
-  {
-    HAL_Delay(20);
-  }
+                                                /*feeding task*/
+  xTaskCreate(vtaskFeedingCotrol,FEEDING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,FEEDING_TASK_PRIORITY,&Feeding_Task_Handle); 
+                                                /*Filling task*/
+  xTaskCreate(vtaskFillingCotrol,FILLING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,FILLING_TASK_PRIORITY,&Filling_Task_Handle);
                                               /*Capping task*/
-  if (xTaskCreate(vtaskCappingCotrol,
-                  CAPPING_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  CAPPING_TASK_PRIORITY,
-                  &Capping_Task_Handle) ==pdPASS )
-  {
-    HAL_Delay(20);
-  }
+  xTaskCreate(vtaskCappingCotrol,CAPPING_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,CAPPING_TASK_PRIORITY,&Capping_Task_Handle); 
                                               /*Rotate line1 task*/
-  if ( xTaskCreate(vtaskRotateLine1,
-                  ROTATE_LINE1_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  ROTATE_LINE1_TASK_PRIORITY,
-                  &Rotate_Line1_Task_Handle) == pdPASS )
-  {
-    HAL_Delay(20);
-  }
+  xTaskCreate(vtaskRotateLine1,ROTATE_LINE1_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_LINE1_TASK_PRIORITY,&Rotate_Line1_Task_Handle); 
                                               /*Rotate line2 task*/
-  if (xTaskCreate(vtaskRotateLine2,
-                  ROTATE_LINE2_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  ROTATE_LINE2_TASK_PRIORITY,
-                  &Rotate_Line2_Task_Handle) == pdPASS )
-  {
-    HAL_Delay(20);
-  }
+  xTaskCreate(vtaskRotateLine2,ROTATE_LINE2_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_LINE2_TASK_PRIORITY,&Rotate_Line2_Task_Handle); 
                                               /*Rotate Rotary task*/
-  if (xTaskCreate(vtaskRotateRotary,
-                  ROTATE_ROTARY_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  ROTATE_ROTARY_TASK_PRIORITY,
-                  &Rotate_Rotary_Task_Handle) == pdPASS)
-  {
-    HAL_Delay(20);
-  }
+  xTaskCreate(vtaskRotateRotary,ROTATE_ROTARY_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,ROTATE_ROTARY_TASK_PRIORITY,&Rotate_Rotary_Task_Handle);
                                               /*Uart Control task*/
-  if (xTaskCreate(vtaskUartControl,
-                  UART_CONTROL_TASK_NAME,
-                  configMINIMAL_STACK_SIZE,
-                  (void *)NULL,
-                  UART_CONTROL_TASK_PRIORITY,
-                  &Uart_Control_Task_Handle) == pdPASS)
-  {
-    HAL_Delay(20);
-  }
+  xTaskCreate(vtaskUartControl,UART_CONTROL_TASK_NAME,configMINIMAL_STACK_SIZE,(void *)NULL,UART_CONTROL_TASK_PRIORITY,&Uart_Control_Task_Handle) ;
   
   vTaskStartScheduler();
   for (;;)
